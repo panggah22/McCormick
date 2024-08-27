@@ -1,6 +1,8 @@
 import pandapower.networks as pn
 import pandas as pd
 import numpy as np
+
+import gurobipy as gp
 from gurobipy import GRB, tuplelist
 
 class IEEE33:
@@ -100,6 +102,18 @@ class IEEE33:
         self.gen['gci'] = gci 
         self.gen.index = self.gen.bus
 
+    def resi(self, m, n):
+        # Using a tuple to check for membership is faster than using 'not in'
+        idx = (m, n) if (m, n) in self.line.index else (n, m)
+        # Accessing the 'r' column directly and then using .at for scalar value access
+        return self.line.at[idx, 'r'] / self.impbase
+
+    def reac(self, m, n,):
+        # Using a tuple to check for membership is faster than using 'not in'
+        idx = (m, n) if (m, n) in self.line.index else (n, m)
+        # Accessing the 'x' column directly and then using .at for scalar value access
+        return self.line.at[idx, 'x'] / self.impbase
+
 class define_sets(IEEE33):
     def __init__(self, parent_instance):
         # Initialize the parent class with its existing properties
@@ -140,18 +154,6 @@ class define_sets(IEEE33):
             for i,j in self.line:
                 self.line_t_dir = self.line_t_dir + tuplelist([(i,j,t)]) + tuplelist([(j,i,t)])
 
-def resi(line_df, m, n, impbase=1):
-    # Using a tuple to check for membership is faster than using 'not in'
-    idx = (m, n) if (m, n) in line_df.index else (n, m)
-    # Accessing the 'r' column directly and then using .at for scalar value access
-    return line_df.at[idx, 'r'] / impbase
-
-def reac(line_df, m, n, impbase=1):
-    # Using a tuple to check for membership is faster than using 'not in'
-    idx = (m, n) if (m, n) in line_df.index else (n, m)
-    # Accessing the 'x' column directly and then using .at for scalar value access
-    return line_df.at[idx, 'x'] / impbase
-
 def define_neighbor(set_bus, set_line):
     ne = {}
     for x in set_bus:
@@ -166,3 +168,42 @@ def define_neighbor(set_bus, set_line):
     neighbors = pd.DataFrame({'Neighbors': [ne[node] for node in ne]}, index=list(ne.keys()))
 
     return neighbors
+
+def mdt(m,x,y,datapair,p=0,P=0):
+    pairs = datapair
+
+    set_l = range(p,P+1)
+    set_k = range(10)
+    set_kl = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in pairs])
+    set_z = tuplelist([(i,j,t,k,l) for l in set_l for k in set_k for i,j,t in pairs])
+
+    # Here, 'left_set' are the variables that are discretized and 'right_set' are the variables that are continuous
+    w = m.addVars(pairs, name='w')
+    delta_w = m.addVars(pairs, lb=-GRB.INFINITY, ub=GRB.INFINITY, name='delta_w')
+    delta_x1 = m.addVars(pairs, lb=0, ub=10**p, name='delta_x1')
+
+    # Indexed continuous variables (hat_x_k) and binary variables (z_k)
+    hat_x = m.addVars(set_kl, lb=-GRB.INFINITY, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='hat_x')
+    z = m.addVars(set_z, vtype=GRB.BINARY, name='z')
+
+    m.update()
+        
+    m.addConstrs((w[i,j,t] == gp.quicksum(gp.quicksum(10**l * k * hat_x[i,j,t,k,l] for k in set_k) for l in set_l) + delta_w[i,j,t] for i,j,t in pairs))
+    
+    m.addConstrs((x[i,j,t] == gp.quicksum(gp.quicksum(10**l * k * z[i,j,t,k,l] for k in set_k) for l in set_l) + delta_x1[i,j,t] for i,j,t in pairs))
+
+    m.addConstrs((y[j,t] == gp.quicksum(hat_x[i,j,t,k,l] for k in set_k) for l in set_l for i,j,t in pairs))
+
+    m.addConstrs((hat_x[i,j,t,k,l] >= y[j,t].LB * z[i,j,t,k,l] for i,j,t,k,l in set_kl))
+    m.addConstrs((hat_x[i,j,t,k,l] <= y[j,t].UB * z[i,j,t,k,l] for i,j,t,k,l in set_kl))
+
+    m.addConstrs((z.sum(i,j,t,'*',l) == 1 for i,j,t,k,l in set_z))
+
+    m.addConstrs((delta_w[i,j,t] >= y[j,t].LB * delta_x1[i,j,t] for i,j,t in pairs))
+    m.addConstrs((delta_w[i,j,t] <= y[j,t].UB * delta_x1[i,j,t] for i,j,t in pairs))
+
+    m.addConstrs((delta_w[i,j,t] <= (y[j,t] - y[j,t].LB) * 10**p + y[j,t].LB * delta_x1[i,j,t] for i,j,t in pairs))
+    m.addConstrs((delta_w[i,j,t] >= (y[j,t] - y[j,t].UB) * 10**p + y[j,t].UB * delta_x1[i,j,t] for i,j,t in pairs))
+
+    return w, delta_w, delta_x1, hat_x, z, pairs
+

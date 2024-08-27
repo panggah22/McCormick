@@ -17,7 +17,7 @@ essloc = {'bus':[7,21,29],'Cap':[1,1,1],'Pmin':[0,0,0],'Pmax':[0.2,0.2,0.2],'Qmi
 # ----------- INPUTS -----------
 T = 1
 mins = 30
-vmin, vmax = 0.95, 1.05
+vmin, vmax = 0.9,1.1
 
 # ------------------------------
 data = IEEE33(T=T,period=mins)
@@ -45,41 +45,29 @@ q_ij = m.addVars(sets.line_t, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INF
 
 l_ij = m.addVars(sets.line_t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='L_Line')
 
-## Line Flow Directions
-p_hat = m.addVars(sets.line_t_dir, vtype=GRB.CONTINUOUS, lb=0, ub=br_lim, name='P_hat')
-
-## PV Variables
-# p_pv2grid = m.addVars(sets.pv_t, vtype=GRB.CONTINUOUS, lb=0, ub=data.pvdata.p_max.tolist()*T, name='sets.pv_to_grid')
-# p_pv2ess = m.addVars(sets.pv_t, vtype=GRB.CONTINUOUS, lb=0, ub=data.pvdata.p_max.tolist()*T, name='sets.pv_to_ess')
-# q_pv = m.addVars(sets.pv_t, vtype=GRB.CONTINUOUS, lb=data.pvdata.q_min.tolist()*T, ub=data.pvdata.q_max.tolist()*T, name='Q_PV')
-
-## ESS Variables
-# soc_e = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=0.1, ub=0.9, name='SOC') # SOC unit is unitless (0 to 1)
-# p_ch = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=0, ub=data.essdata.Pmax.tolist()*T, name='P_Chg_Ess')
-# p_ch_grid = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=0, ub=data.essdata.Pmax.tolist()*T, name='P_Chg_Grid') # From grid
-# p_ch_pv = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=0, ub=data.essdata.Pmax.tolist()*T, name='P_Chg_Pv') # From PV
-# p_dc = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=0, ub=data.essdata.Pmax.tolist()*T, name='P_Dch_Ess')
-# x_ch = m.addVars(sets.ess_t, vtype=GRB.BINARY, name='Ch_Status')
-# r_ess = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY, name='Emi_Ess')
-
 neighbors = define_neighbor(sets.bus,sets.line)
-P_balance = m.addConstrs(((p_ij.sum(i,'*',t) + gp.quicksum(resi(data.line,i,j) * l_ij.sum(i,j,t) for j in neighbors.Neighbors[i])) - p_ij.sum('*',i,t) == p_inj[i,t] for i,t in sets.bus_t), name='P-Balance')
-Q_balance = m.addConstrs(((q_ij.sum(i,'*',t) + gp.quicksum(reac(data.line,i,j) * l_ij.sum(i,j,t) for j in neighbors.Neighbors[i])) - q_ij.sum('*',i,t) == q_inj[i,t] for i,t in sets.bus_t), name='Q-Balance')
-# V_drop = m.addConstrs((u_i[i,t] - u_i[j,t] == 2*(resi(data.line,i,j) * p_ij[i,j,t] + reac(data.line,i,j) * q_ij[i,j,t]) - (resi(data.line,i,j)**2 + reac(data.line,i,j)**2) * l_ij[i,j,t] for i,j,t in sets.line_t),name='V-Drop')
+impbase = data.impbase
+
+P_balance = m.addConstrs(((p_ij.sum(i,'*',t) + gp.quicksum(data.resi(i,j) * l_ij.sum(i,j,t) for j in neighbors.Neighbors[i])) - p_ij.sum('*',i,t) == p_inj[i,t] for i,t in sets.bus_t), name='P-Balance')
+Q_balance = m.addConstrs(((q_ij.sum(i,'*',t) + gp.quicksum(data.reac(i,j) * l_ij.sum(i,j,t) for j in neighbors.Neighbors[i])) - q_ij.sum('*',i,t) == q_inj[i,t] for i,t in sets.bus_t), name='Q-Balance')
+V_drop = m.addConstrs((u_i[i,t] - u_i[j,t] == 2*(data.resi(i,j) * p_ij[i,j,t] + data.reac(i,j) * q_ij[i,j,t]) - (data.resi(i,j)**2 + data.reac(i,j)**2) * l_ij[i,j,t] for i,j,t in sets.line_t),name='V-Drop')
 V_slack = m.addConstrs((u_i[i,t] == 1 for i in [0] for t in sets.t), name='V-Slack')
 
-# P_injection = m.addConstrs((p_inj[i,t] == p_g.sum(i,t) - data.bus.Pd[i] for i,t in sets.bus_t), name='P-Injection')
-# Q_injection = m.addConstrs((q_inj[i,t] == q_g.sum(i,t) - data.bus.Qd[i] for i,t in sets.bus_t), name='Q-Injection')
+P_injection = m.addConstrs((p_inj[i,t] == p_g.sum(i,t) - data.bus.Pd[i]*1 for i,t in sets.bus_t), name='P-Injection')
+Q_injection = m.addConstrs((q_inj[i,t] == q_g.sum(i,t) - data.bus.Qd[i]*1 for i,t in sets.bus_t), name='Q-Injection')
 
-Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
+# Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 
 
-ploss = m.addVars(sets.t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='ploss')
+# ploss = m.addVars(sets.t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='ploss')
 # m.addConstrs(ploss[t] == gp.quicksum(resi(data.line,i,j)*l_ij[i,j,t] for i,j in sets.line) for t in sets.t)
 # m.setObjective(ploss.sum())
 m.update()
 m.write('test.lp')
+
+w, delta_w, delta_x1, hat_x, z, pairs = mdt(m,l_ij,u_i,sets.line_t,p=-2,P=2)
+Ohm_law = m.addConstrs((w[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
+
 m.optimize()
 
-# print([v.X for v in p_g.values()])
-print(data.bus)
+print(p_g)

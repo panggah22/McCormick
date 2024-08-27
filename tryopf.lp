@@ -300,6 +300,70 @@ Subject To
  Q-Injection[30,0]: Q_Inj[30,0] = -0.07
  Q-Injection[31,0]: Q_Inj[31,0] = -0.1
  Q-Injection[32,0]: Q_Inj[32,0] = -0.04
+ Ohms-Law[0,1,0]: [ V_squared[1,0] * L_Line[0,1,0] - P_Line[0,1,0] ^2
+   - Q_Line[0,1,0] ^2 ] = 0
+ Ohms-Law[1,2,0]: [ V_squared[2,0] * L_Line[1,2,0] - P_Line[1,2,0] ^2
+   - Q_Line[1,2,0] ^2 ] = 0
+ Ohms-Law[2,3,0]: [ V_squared[3,0] * L_Line[2,3,0] - P_Line[2,3,0] ^2
+   - Q_Line[2,3,0] ^2 ] = 0
+ Ohms-Law[3,4,0]: [ V_squared[4,0] * L_Line[3,4,0] - P_Line[3,4,0] ^2
+   - Q_Line[3,4,0] ^2 ] = 0
+ Ohms-Law[4,5,0]: [ V_squared[5,0] * L_Line[4,5,0] - P_Line[4,5,0] ^2
+   - Q_Line[4,5,0] ^2 ] = 0
+ Ohms-Law[5,6,0]: [ V_squared[6,0] * L_Line[5,6,0] - P_Line[5,6,0] ^2
+   - Q_Line[5,6,0] ^2 ] = 0
+ Ohms-Law[6,7,0]: [ V_squared[7,0] * L_Line[6,7,0] - P_Line[6,7,0] ^2
+   - Q_Line[6,7,0] ^2 ] = 0
+ Ohms-Law[7,8,0]: [ V_squared[8,0] * L_Line[7,8,0] - P_Line[7,8,0] ^2
+   - Q_Line[7,8,0] ^2 ] = 0
+ Ohms-Law[8,9,0]: [ V_squared[9,0] * L_Line[8,9,0] - P_Line[8,9,0] ^2
+   - Q_Line[8,9,0] ^2 ] = 0
+ Ohms-Law[9,10,0]: [ V_squared[10,0] * L_Line[9,10,0] - P_Line[9,10,0] ^2
+   - Q_Line[9,10,0] ^2 ] = 0
+ Ohms-Law[10,11,0]: [ V_squared[11,0] * L_Line[10,11,0]
+   - P_Line[10,11,0] ^2 - Q_Line[10,11,0] ^2 ] = 0
+ Ohms-Law[11,12,0]: [ V_squared[12,0] * L_Line[11,12,0]
+   - P_Line[11,12,0] ^2 - Q_Line[11,12,0] ^2 ] = 0
+ Ohms-Law[12,13,0]: [ V_squared[13,0] * L_Line[12,13,0]
+   - P_Line[12,13,0] ^2 - Q_Line[12,13,0] ^2 ] = 0
+ Ohms-Law[13,14,0]: [ V_squared[14,0] * L_Line[13,14,0]
+   - P_Line[13,14,0] ^2 - Q_Line[13,14,0] ^2 ] = 0
+ Ohms-Law[14,15,0]: [ V_squared[15,0] * L_Line[14,15,0]
+   - P_Line[14,15,0] ^2 - Q_Line[14,15,0] ^2 ] = 0
+ Ohms-Law[15,16,0]: [ V_squared[16,0] * L_Line[15,16,0]
+   - P_Line[15,16,0] ^2 - Q_Line[15,16,0] ^2 ] = 0
+ Ohms-Law[16,17,0]: [ V_squared[17,0] * L_Line[16,17,0]
+   - P_Line[16,17,0] ^2 - Q_Line[16,17,0] ^2 ] = 0
+ Ohms-Law[1,18,0]: [ V_squared[18,0] * L_Line[1,18,0] - P_Line[1,18,0] ^2
+   - Q_Line[1,18,0] ^2 ] = 0
+ Ohms-Law[18,19,0]: [ V_squared[19,0] * L_Line[18,19,0]
+   - P_Line[18,19,0] ^2 - Q_Line[18,19,0] ^2 ] = 0
+ Ohms-Law[19,20,0]: [ V_squared[20,0] * L_Line[19,20,0]
+   - P_Line[19,20,0] ^2 - Q_Line[19,20,0] ^2 ] = 0
+ Ohms-Law[20,21,0]: [ V_squared[21,0] * L_Line[20,21,0]
+   - P_Line[20,21,0] ^2 - Q_Line[20,21,0] ^2 ] = 0
+ Ohms-Law[2,22,0]: [ V_squared[22,0] * L_Line[2,22,0] - P_Line[2,22,0] ^2
+   - Q_Line[2,22,0] ^2 ] = 0
+ Ohms-Law[22,23,0]: [ V_squared[23,0] * L_Line[22,23,0]
+   - P_Line[22,23,0] ^2 - Q_Line[22,23,0] ^2 ] = 0
+ Ohms-Law[23,24,0]: [ V_squared[24,0] * L_Line[23,24,0]
+   - P_Line[23,24,0] ^2 - Q_Line[23,24,0] ^2 ] = 0
+ Ohms-Law[5,25,0]: [ V_squared[25,0] * L_Line[5,25,0] - P_Line[5,25,0] ^2
+   - Q_Line[5,25,0] ^2 ] = 0
+ Ohms-Law[25,26,0]: [ V_squared[26,0] * L_Line[25,26,0]
+   - P_Line[25,26,0] ^2 - Q_Line[25,26,0] ^2 ] = 0
+ Ohms-Law[26,27,0]: [ V_squared[27,0] * L_Line[26,27,0]
+   - P_Line[26,27,0] ^2 - Q_Line[26,27,0] ^2 ] = 0
+ Ohms-Law[27,28,0]: [ V_squared[28,0] * L_Line[27,28,0]
+   - P_Line[27,28,0] ^2 - Q_Line[27,28,0] ^2 ] = 0
+ Ohms-Law[28,29,0]: [ V_squared[29,0] * L_Line[28,29,0]
+   - P_Line[28,29,0] ^2 - Q_Line[28,29,0] ^2 ] = 0
+ Ohms-Law[29,30,0]: [ V_squared[30,0] * L_Line[29,30,0]
+   - P_Line[29,30,0] ^2 - Q_Line[29,30,0] ^2 ] = 0
+ Ohms-Law[30,31,0]: [ V_squared[31,0] * L_Line[30,31,0]
+   - P_Line[30,31,0] ^2 - Q_Line[30,31,0] ^2 ] = 0
+ Ohms-Law[31,32,0]: [ V_squared[32,0] * L_Line[31,32,0]
+   - P_Line[31,32,0] ^2 - Q_Line[31,32,0] ^2 ] = 0
 Bounds
  0.81 <= V_squared[0,0] <= 1.21
  0.81 <= V_squared[1,0] <= 1.21
