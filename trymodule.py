@@ -2,6 +2,7 @@ from module import *
 
 import gurobipy as gp
 from gurobipy import GRB,tuplelist
+import scipy.io
 
 # DG input
 dgloc = {'bus':[3,13,22], 'Pmin':[0,0,0], 'Pmax':[0.5,0.5,0.5], 'Qmin':[-0.3,-0.3,-0.3], 'Qmax':[0.3,0.3,0.3]}
@@ -18,7 +19,7 @@ essloc = {'bus':[7,21,29],'Cap':[1,1,1],'Pmin':[0,0,0],'Pmax':[0.2,0.2,0.2],'Qmi
 T = 1
 mins = 30
 vmin, vmax = 0.9,1.1
-
+use_mdt = True
 # ------------------------------
 data = IEEE33(T=T,period=mins)
 data.loadsys()
@@ -57,17 +58,28 @@ P_injection = m.addConstrs((p_inj[i,t] == p_g.sum(i,t) - data.bus.Pd[i]*1 for i,
 Q_injection = m.addConstrs((q_inj[i,t] == q_g.sum(i,t) - data.bus.Qd[i]*1 for i,t in sets.bus_t), name='Q-Injection')
 
 # Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
+if use_mdt == True:
+    w = mdt(m,l_ij,u_i,sets.line_t,p=-2,P=2)
+    Ohm_law = m.addConstrs((w[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
+else:
+    Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 
 
+## Direction replacement
+# p_line_dir = m.addConstrs((p_ij[i,j,t] == p_hat[i,j,t] - p_hat[j,i,t] for i,j,t in line_t), name='Line-Direction')
+
+# # v--- p_hat_ij * p_hat_ji = 0 ---v
+# for t in set_t: # Somehow Special Ordered Set is sometimes faster than binary linearization
+#     for i,j in set_line:
+#         m.addSOS(GRB.SOS_TYPE1,[p_hat[i,j,t], p_hat[j,i,t]],[1,1])
+
+
+# ---------------- OBJECTIVE FUNCTION ----------------
 # ploss = m.addVars(sets.t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='ploss')
 # m.addConstrs(ploss[t] == gp.quicksum(resi(data.line,i,j)*l_ij[i,j,t] for i,j in sets.line) for t in sets.t)
 # m.setObjective(ploss.sum())
+
 m.update()
 m.write('test.lp')
 
-w, delta_w, delta_x1, hat_x, z, pairs = mdt(m,l_ij,u_i,sets.line_t,p=-2,P=2)
-Ohm_law = m.addConstrs((w[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
-
 m.optimize()
-
-print(p_g)

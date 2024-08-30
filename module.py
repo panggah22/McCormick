@@ -205,5 +205,21 @@ def mdt(m,x,y,datapair,p=0,P=0):
     m.addConstrs((delta_w[i,j,t] <= (y[j,t] - y[j,t].LB) * 10**p + y[j,t].LB * delta_x1[i,j,t] for i,j,t in pairs))
     m.addConstrs((delta_w[i,j,t] >= (y[j,t] - y[j,t].UB) * 10**p + y[j,t].UB * delta_x1[i,j,t] for i,j,t in pairs))
 
-    return w, delta_w, delta_x1, hat_x, z, pairs
+    return w
 
+def discretize_var(m,x,p,P):
+    idx_x = [idx for idx,v in x.items()]
+    # Input var
+    set_l = range(p,P+1)
+    set_k = range(10)
+
+    set_lbd = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in idx_x])
+
+    delta_x = m.addVars(idx_x, lb=0, ub=10**p, name='delta_x1')
+    lbd = m.addVars(set_lbd, vtype=GRB.BINARY, name='lambda')
+
+def var_values(y,mult=1):
+    z = []
+    for v in y.values():
+        z.append(v.X*mult)
+    return z
