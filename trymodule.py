@@ -3,6 +3,7 @@ from module import *
 import gurobipy as gp
 from gurobipy import GRB,tuplelist
 import scipy.io
+import math
 
 # DG input
 dgloc = {'bus':[3,13,22], 'Pmin':[0,0,0], 'Pmax':[0.5,0.5,0.5], 'Qmin':[-0.3,-0.3,-0.3], 'Qmax':[0.3,0.3,0.3]}
@@ -59,7 +60,7 @@ Q_injection = m.addConstrs((q_inj[i,t] == q_g.sum(i,t) - data.bus.Qd[i]*1 for i,
 
 # Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 if use_mdt == True:
-    w = mdt(m,l_ij,u_i,sets.line_t,p=-2,P=2)
+    w, delta_x = mdt(m,l_ij,u_i,sets.line_t,p=-2,P=2)
     Ohm_law = m.addConstrs((w[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 else:
     Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
@@ -83,3 +84,7 @@ m.update()
 m.write('test.lp')
 
 m.optimize()
+
+voltage = [math.sqrt(i.X) for i in u_i.values()]
+print(min(voltage), max(voltage))
+print(p_g)
