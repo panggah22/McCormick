@@ -60,8 +60,8 @@ Q_injection = m.addConstrs((q_inj[i,t] == q_g.sum(i,t) - data.bus.Qd[i]*1 for i,
 
 # Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 if use_mdt == True:
-    w, delta_x = mdt(m,l_ij,u_i,sets.line_t,p=-4,P=1)
-    # w, delta_x = mdt_iij(m,u_i,l_ij,sets.line_t,p=-3,P=1)
+    # w, delta_x = mdt(m,l_ij,u_i,sets.line_t,p=-4,P=1)
+    w, delta_x = mdt_iij(m,u_i,l_ij,sets.line_t,p=-5,P=1)
     Ohm_law = m.addConstrs((w[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 else:
     Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
@@ -87,7 +87,12 @@ m.write('test.lp')
 m.Params.OutputFlag = 0
 m.optimize()
 
-voltage = [math.sqrt(i.X) for i in u_i.values()]
-print(min(voltage), max(voltage))
+# voltage = [math.sqrt(i.X) for i in u_i.values()]
+# print(min(voltage), max(voltage))
 print(p_g)
-print(max([i.X for i in l_ij.values()]))
+# print(max([i.X for i in l_ij.values()]))
+
+for i,j,t in sets.line_t:
+    # print(abs(l_ij[i,j,t].X * u_i[i,t].X - w[i,j,t].X)/(l_ij[i,j,t].X * u_i[i,t].X)*100)
+    # print(w[i,j,t].X)
+    print(l_ij[i,j,t].X * u_i[i,t].X)

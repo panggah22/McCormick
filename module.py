@@ -210,7 +210,11 @@ def mdt(m,x,y,datapair,p=0,P=0):
 def mdt_iij(m,x,y,datapair,p=0,P=0):
     pairs = datapair
 
-    idx_x = [idx for idx,v in x.items()]
+    # idx_x = [idx for idx,v in x.items()]
+    idx_x = list(set([(i[0], i[2]) for i in datapair]))
+    # pairtuple = tuplelist(pairs)
+    # idx_x = pairtuple.select()
+
 
     set_l = range(p,P+1)
     set_k = range(10)
@@ -230,7 +234,7 @@ def mdt_iij(m,x,y,datapair,p=0,P=0):
         
     m.addConstrs((w[i,j,t] == gp.quicksum(gp.quicksum(10**l * k * hat_x[i,j,t,k,l] for k in set_k) for l in set_l) + delta_w[i,j,t] for i,j,t in pairs))
     
-    m.addConstrs((x[i,t] == gp.quicksum(gp.quicksum(10**l * k * z[i,t,k,l] for k in set_k) for l in set_l) + delta_x1[i,t] for i,t in idx_x))
+    m.addConstrs((x[i,t] == gp.quicksum(gp.quicksum(10**l * k * z[i,t,k,l] for k in set_k) for l in set_l) + delta_x1[i,t] for i,j,t in pairs))
 
     m.addConstrs((y[i,j,t] == gp.quicksum(hat_x[i,j,t,k,l] for k in set_k) for l in set_l for i,j,t in pairs))
 
