@@ -207,24 +207,20 @@ def mdt(m,x,y,datapair,p=0,P=0):
 
     return w,delta_x1
 
-def mdt_test(m,x,y,common,p=0,P=0):
-    m.update()
+def mdt_iij(m,x,y,datapair,p=0,P=0):
+    pairs = datapair
+
     idx_x = [idx for idx,v in x.items()]
-    idx_y = [idx for idx,v in y.items()]
-    if len(idx_x[0]) < len(idx_y[0]):   
-        pairs = idx_y
-    else:
-        pairs = idx_x
 
     set_l = range(p,P+1)
     set_k = range(10)
     set_kl = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in pairs])
-    set_z = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in pairs])
+    set_z = tuplelist([(i,t,k,l) for l in set_l for k in set_k for i,t in idx_x])
 
     # Here, 'left_set' are the variables that are discretized and 'right_set' are the variables that are continuous
     w = m.addVars(pairs, name='w')
     delta_w = m.addVars(pairs, lb=-GRB.INFINITY, ub=GRB.INFINITY, name='delta_w')
-    delta_x1 = m.addVars(pairs, lb=0, ub=10**p, name='delta_x1')
+    delta_x1 = m.addVars(idx_x, lb=0, ub=10**p, name='delta_x1')
 
     # Indexed continuous variables (hat_x_k) and binary variables (z_k)
     hat_x = m.addVars(set_kl, lb=-GRB.INFINITY, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='hat_x')
@@ -234,22 +230,72 @@ def mdt_test(m,x,y,common,p=0,P=0):
         
     m.addConstrs((w[i,j,t] == gp.quicksum(gp.quicksum(10**l * k * hat_x[i,j,t,k,l] for k in set_k) for l in set_l) + delta_w[i,j,t] for i,j,t in pairs))
     
-    m.addConstrs((x[i,j,t] == gp.quicksum(gp.quicksum(10**l * k * z[i,j,t,k,l] for k in set_k) for l in set_l) + delta_x1[i,j,t] for i,j,t in pairs))
+    m.addConstrs((x[i,t] == gp.quicksum(gp.quicksum(10**l * k * z[i,t,k,l] for k in set_k) for l in set_l) + delta_x1[i,t] for i,t in idx_x))
 
-    m.addConstrs((y[j,t] == gp.quicksum(hat_x[i,j,t,k,l] for k in set_k) for l in set_l for i,j,t in pairs))
+    m.addConstrs((y[i,j,t] == gp.quicksum(hat_x[i,j,t,k,l] for k in set_k) for l in set_l for i,j,t in pairs))
 
-    m.addConstrs((hat_x[i,j,t,k,l] >= y[j,t].LB * z[i,j,t,k,l] for i,j,t,k,l in set_kl))
-    m.addConstrs((hat_x[i,j,t,k,l] <= y[j,t].UB * z[i,j,t,k,l] for i,j,t,k,l in set_kl))
+    m.addConstrs((hat_x[i,j,t,k,l] >= y[i,j,t].LB * z[i,t,k,l] for i,j,t,k,l in set_kl))
+    m.addConstrs((hat_x[i,j,t,k,l] <= y[i,j,t].UB * z[i,t,k,l] for i,j,t,k,l in set_kl))
 
-    m.addConstrs((z.sum(i,j,t,'*',l) == 1 for i,j,t,k,l in set_z))
+    m.addConstrs((z.sum(i,t,'*',l) == 1 for i,t,k,l in set_z))
 
-    m.addConstrs((delta_w[i,j,t] >= y[j,t].LB * delta_x1[i,j,t] for i,j,t in pairs))
-    m.addConstrs((delta_w[i,j,t] <= y[j,t].UB * delta_x1[i,j,t] for i,j,t in pairs))
+    m.addConstrs((delta_w[i,j,t] >= y[i,j,t].LB * delta_x1[i,t] for i,j,t in pairs))
+    m.addConstrs((delta_w[i,j,t] <= y[i,j,t].UB * delta_x1[i,t] for i,j,t in pairs))
 
-    m.addConstrs((delta_w[i,j,t] <= (y[j,t] - y[j,t].LB) * 10**p + y[j,t].LB * delta_x1[i,j,t] for i,j,t in pairs))
-    m.addConstrs((delta_w[i,j,t] >= (y[j,t] - y[j,t].UB) * 10**p + y[j,t].UB * delta_x1[i,j,t] for i,j,t in pairs))
+    m.addConstrs((delta_w[i,j,t] <= (y[i,j,t] - y[i,j,t].LB) * 10**p + y[i,j,t].LB * delta_x1[i,t] for i,j,t in pairs))
+    m.addConstrs((delta_w[i,j,t] >= (y[i,j,t] - y[i,j,t].UB) * 10**p + y[i,j,t].UB * delta_x1[i,t] for i,j,t in pairs))
 
     return w,delta_x1
+
+def mdt_test(m,x,y,common,p=0,P=0):
+    m.update()
+    idx_x = [idx for idx,v in x.items()]
+    idx_y = [idx for idx,v in y.items()]
+    # if len(idx_x[0]) < len(idx_y[0]):   
+    #     pairs = idx_y
+    # else:
+    #     pairs = idx_x
+
+    pairs = common
+
+    set_l = range(p,P+1)
+    set_k = range(10)
+    set_kl = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in pairs])
+    set_lbd = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in pairs])
+
+    # Here, 'left_set' are the variables that are discretized and 'right_set' are the variables that are continuous
+    z = m.addVars(pairs, name='z')
+    delta_z = m.addVars(pairs, lb=-GRB.INFINITY, ub=GRB.INFINITY, name='delta_z')
+    delta_x = m.addVars(pairs, lb=0, ub=10**p, name='delta_x')
+
+    # Indexed continuous variables (hat_x_k) and binary variables (z_k)
+    hat_y = m.addVars(set_kl, lb=-GRB.INFINITY, ub=GRB.INFINITY, vtype=GRB.CONTINUOUS, name='hat_x')
+    lbd = m.addVars(set_lbd, vtype=GRB.BINARY, name='z')
+
+    m.update()
+        
+    m.addConstrs((z[g] == gp.quicksum(gp.quicksum(10**l * k * hat_y[(*g,k,l)] for k in set_k) for l in set_l) + delta_z[g] for g in pairs))
+    
+    print(x)
+    # m.addConstrs((x[g] == gp.quicksum(gp.quicksum(10**l * k * lbd[(*g,k,l)] for k in set_k) for l in set_l) + delta_x[g] for g in pairs))
+
+    if len(pairs[0]) == 3:
+        m.addConstrs((y[j,t] == gp.quicksum(hat_y[i,j,t,k,l] for k in set_k) for l in set_l for i,j,t in pairs))
+    if len(pairs[0]) == 2:
+        m.addConstrs((y[j,t] == gp.quicksum(hat_y[j,t,k,l] for k in set_k) for l in set_l for j,t in pairs))
+
+    m.addConstrs((hat_y[i,j,t,k,l] >= y[j,t].LB * lbd[i,j,t,k,l] for i,j,t,k,l in set_kl))
+    m.addConstrs((hat_y[i,j,t,k,l] <= y[j,t].UB * lbd[i,j,t,k,l] for i,j,t,k,l in set_kl))
+
+    m.addConstrs((lbd.sum(i,j,t,'*',l) == 1 for i,j,t,k,l in set_lbd))
+
+    m.addConstrs((delta_z[i,j,t] >= y[j,t].LB * delta_x[i,j,t] for i,j,t in pairs))
+    m.addConstrs((delta_z[i,j,t] <= y[j,t].UB * delta_x[i,j,t] for i,j,t in pairs))
+
+    m.addConstrs((delta_z[i,j,t] <= (y[j,t] - y[j,t].LB) * 10**p + y[j,t].LB * delta_x[i,j,t] for i,j,t in pairs))
+    m.addConstrs((delta_z[i,j,t] >= (y[j,t] - y[j,t].UB) * 10**p + y[j,t].UB * delta_x[i,j,t] for i,j,t in pairs))
+
+    return z,delta_x
 
 def discretize_var(m,x,p,P):
     idx_x = [idx for idx,v in x.items()]

@@ -45,7 +45,7 @@ br_lim = 5
 p_ij = m.addVars(sets.line_t, vtype=GRB.CONTINUOUS, lb=-br_lim, ub=br_lim, name='P_Line')
 q_ij = m.addVars(sets.line_t, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, ub=GRB.INFINITY, name='Q_Line')
 
-l_ij = m.addVars(sets.line_t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='L_Line')
+l_ij = m.addVars(sets.line_t, vtype=GRB.CONTINUOUS, lb=0, ub=30, name='L_Line')
 
 neighbors = define_neighbor(sets.bus,sets.line)
 impbase = data.impbase
@@ -60,7 +60,8 @@ Q_injection = m.addConstrs((q_inj[i,t] == q_g.sum(i,t) - data.bus.Qd[i]*1 for i,
 
 # Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 if use_mdt == True:
-    w, delta_x = mdt(m,l_ij,u_i,sets.line_t,p=-2,P=2)
+    w, delta_x = mdt(m,l_ij,u_i,sets.line_t,p=-4,P=1)
+    # w, delta_x = mdt_iij(m,u_i,l_ij,sets.line_t,p=-3,P=1)
     Ohm_law = m.addConstrs((w[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 else:
     Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
@@ -76,15 +77,17 @@ else:
 
 
 # ---------------- OBJECTIVE FUNCTION ----------------
-# ploss = m.addVars(sets.t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='ploss')
-# m.addConstrs(ploss[t] == gp.quicksum(resi(data.line,i,j)*l_ij[i,j,t] for i,j in sets.line) for t in sets.t)
-# m.setObjective(ploss.sum())
+ploss = m.addVars(sets.t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='ploss')
+m.addConstrs(ploss[t] == gp.quicksum(data.resi(i,j)*l_ij[i,j,t] for i,j in sets.line) for t in sets.t)
+m.setObjective(ploss.sum())
 
 m.update()
 m.write('test.lp')
 
+m.Params.OutputFlag = 0
 m.optimize()
 
 voltage = [math.sqrt(i.X) for i in u_i.values()]
 print(min(voltage), max(voltage))
 print(p_g)
+print(max([i.X for i in l_ij.values()]))
