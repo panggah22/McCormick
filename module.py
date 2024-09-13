@@ -249,17 +249,13 @@ def mdt_iij(m,x,y,datapair,p=0,P=0):
     pairs = datapair
 
     idx_x = [idx for idx,v in x.items()]
-    # idx_x = list(set([(i[0], i[2]) for i in datapair]))
-    # pairtuple = tuplelist(pairs)
-    # idx_x = pairtuple.select()
-
 
     set_l = range(p,P+1)
     set_k = range(10)
     set_kl = tuplelist([(*g,k,l) for l in set_l for k in set_k for g in pairs])
     set_z = tuplelist([(i,t,k,l) for l in set_l for k in set_k for i,t in idx_x])
 
-    # Here, 'left_set' are the variables that are discretized and 'right_set' are the variables that are continuous
+    # Variables for discretization
     w = m.addVars(pairs, name='w')
     delta_w = m.addVars(pairs, lb=-GRB.INFINITY, ub=GRB.INFINITY, name='delta_w')
     delta_x1 = m.addVars(idx_x, lb=0, ub=10**p, name='delta_x1')
