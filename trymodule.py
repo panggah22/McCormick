@@ -28,7 +28,7 @@ seqs = [0]
 data = IEEE33(T=T,period=mins)
 data.loadsys()
 data.include_dg(dgloc,gci)
-# data.include_pv(pvloc)
+data.include_pv(pvloc)
 data.include_ess(essloc)
 
 sets = define_sets(data)
@@ -98,7 +98,7 @@ for seq in seqs:
         aux_1, delta_x = mdt_iij(m,u_i,l_ij,sets.line_t,p=-4,P=1)
         Ohm_law = m.addConstrs((aux_1[i,j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
     else:
-        Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] == p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
+        Ohm_law = m.addConstrs((l_ij[i,j,t] * u_i[j,t] >= p_ij[i,j,t]**2 + q_ij[i,j,t]**2 for i,j,t in sets.line_t), name='Ohms-Law')
 
     # Direction replacement
     p_line_dir = m.addConstrs((p_ij[i,j,t] == p_hat[i,j,t] - p_hat[j,i,t] for i,j,t in sets.line_t), name='Line-Direction')
@@ -109,14 +109,16 @@ for seq in seqs:
             m.addSOS(GRB.SOS_TYPE1,[p_hat[i,j,t], p_hat[j,i,t]],[1,1])
 
     w_i = m.addVars(sets.bus_t, vtype=GRB.CONTINUOUS, lb=0, ub=1, name='node_int')
+    w_es = m.addVars(sets.ess_t, vtype=GRB.CONTINUOUS, lb=0, name='ess_int')
     r_g = m.addVars(sets.gen_t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='rate_gen')
     
     Rate_gen = m.addConstrs((r_g[i,t] == data.gen.gci[i] * p_g[i,t] for i,t in sets.gen_t), name='Gen-emission-rate')
     Int_balance = m.addConstrs((w_i[i,t]*p_g.sum(i,t) + w_i[i,t]*p_hat.sum('*',i,t) >= r_g.sum(i,t) + gp.quicksum(w_i[j,t] * p_hat[j,i,t] for j in neighbors.Neighbors[i]) for i,t in sets.bus_t),name='Int-balance') # Without ESS CEF
+    # Int_balance = m.addConstrs((w_i[i,t]*p_g.sum(i,t) + w_i[i,t]*p_hat.sum('*',i,t) + w_i[i,t]*p_dc.sum(i,t) >= r_g.sum(i,t) + gp.quicksum(w_i[j,t] * p_hat[j,i,t] for j in neighbors.Neighbors[i]) + w_es.sum(i,t)*p_dc.sum(i,t) for i,t in sets.bus_t),name='Int-balance') # With ESS CEF
 
-    penalty = m.addVars(sets.bus_t, lb=0,ub=1,name='penalty')
-    p_hs = m.addVars(sets.bus_t, vtype=GRB.CONTINUOUS, lb=0, ub=3, name='p_hat_sum')
-    m.addConstrs((p_hs[i,t] == p_hat.sum('*',i,t) for i,t in sets.bus_t))
+    # penalty = m.addVars(sets.bus_t, lb=0,ub=1,name='penalty')
+    # p_hs = m.addVars(sets.bus_t, vtype=GRB.CONTINUOUS, lb=0, ub=3, name='p_hat_sum')
+    # m.addConstrs((p_hs[i,t] == p_hat.sum('*',i,t) for i,t in sets.bus_t))
 
     # aux_2,del_wi = mdt_ii(m,w_i,p_hs,sets.bus_t,p=-2,P=1)
     # aux_2,del_wi = mdt_ii(m,p_hs,w_i,sets.bus_t,p=-1,P=0)
@@ -130,7 +132,8 @@ for seq in seqs:
     m.update()
     m.write('test.lp')
 
-    # m.Params.TimeLimit = 180
+    m.Params.TimeLimit = 600
+    m.Params.MIPGap = 0.02
     # m.Params.OutputFlag = 0
     m.optimize()
 
@@ -159,7 +162,8 @@ for seq in seqs:
     #         print(aux_1[i,j,t].X, ';', u_i[i,t].X*l_ij[i,j,t].X)
     
     for i,t in sets.bus_t:
-    #     print(w_i[i,t].X)
-        print(p_hs[i,t].X)
+        print(w_i[i,t].X)
+        # print(p_hs[i,t].X)
 
     # print(p_g)
+    print(w_i)
