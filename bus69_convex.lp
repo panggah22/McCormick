@@ -1,4 +1,4 @@
-\ Model Case33-Linear
+\ Model bus69_convex
 \ LP format - for model browsing. Use MPS format to capture full model detail.
 Minimize
   L_Line[0,1,0] + L_Line[1,2,0] + L_Line[2,3,0] + L_Line[3,4,0]

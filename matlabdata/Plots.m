@@ -2,7 +2,8 @@
 % load p_ch_case3.mat
 % load p_dc_case3.mat
 % load soc_case3.mat
-
+clear;
+run 'D:\PANGGAH\DATA\GitHub\Research-6\Code\Carbon Economic Dispatch\matfigures\drosaa.m' % For DRO and SAA
 current_dir = pwd;
 filedir = 'case3_new';
 % dirs = namefile(filedir,'q_line'); load(dirs)
@@ -98,7 +99,7 @@ ax = gca;
 ax.ColorOrderIndex = 1;
 
 load(namefile('case3','emi_load'))
-plot([emi_load(:,22),emi22_2*0.95],LineWidth=2);
+plot([emi_load(:,22),emi22_2*0.95]*1000,LineWidth=2);
 % ylim([0,0.8])
 xlim([1,49])
 ylabel({'Nodal emission of';' load-22 (kgCO_2/\Delta t)'})
@@ -114,16 +115,16 @@ fontname(f5,'Times New Roman')
 load(namefile(filedir,'p_loss')); loss_avg = sum(p_loss)/49*1000;
 fprintf('\nTotal system loss: %d',loss_avg)
 
-load(namefile(filedir,'r_g')); gen_emi_total = sum(sum(r_gen))*0.5*1000;
-fprintf('\nTotal generator emission: %d',gen_emi_total)
+% load(namefile(filedir,'r_g')); gen_emi_total = sum(sum(r_gen))*0.5*1000;
+% fprintf('\nTotal generator emission: %d',gen_emi_total)
 
-load(namefile(filedir,'em_es')); ess_emi_total = sum(em_es(end,:))*2*1000;
-fprintf('\nTotal ess emission: %d',ess_emi_total)
+% load(namefile(filedir,'em_es')); ess_emi_total = sum(em_es(end,:))*2*1000;
+% fprintf('\nTotal ess emission: %d',ess_emi_total)
+% 
+% load(namefile(filedir,'emi_load')); load_emi_total = sum(sum(emi_load))*1000;
+% fprintf('\nTotal load emission: %d',load_emi_total)
 
-load(namefile(filedir,'emi_load')); load_emi_total = sum(sum(emi_load))*1000;
-fprintf('\nTotal load emission: %d',load_emi_total)
-
-loss_emi = gen_emi_total - ess_emi_total - load_emi_total;
+% loss_emi = gen_emi_total - ess_emi_total - load_emi_total;
 
 % em_es(end,:)
 
