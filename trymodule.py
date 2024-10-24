@@ -113,8 +113,9 @@ for seq in seqs:
     r_g = m.addVars(sets.gen_t, vtype=GRB.CONTINUOUS, lb=0, ub=GRB.INFINITY, name='rate_gen')
     
     Rate_gen = m.addConstrs((r_g[i,t] == data.gen.gci[i] * p_g[i,t] for i,t in sets.gen_t), name='Gen-emission-rate')
-    Int_balance = m.addConstrs((w_i[i,t]*p_g.sum(i,t) + w_i[i,t]*p_hat.sum('*',i,t) >= r_g.sum(i,t) + gp.quicksum(w_i[j,t] * p_hat[j,i,t] for j in neighbors.Neighbors[i]) for i,t in sets.bus_t),name='Int-balance') # Without ESS CEF
+    # Int_balance = m.addConstrs((w_i[i,t]*p_g.sum(i,t) + w_i[i,t]*p_hat.sum('*',i,t) >= r_g.sum(i,t) + gp.quicksum(w_i[j,t] * p_hat[j,i,t] for j in neighbors.Neighbors[i]) for i,t in sets.bus_t),name='Int-balance') # Without ESS CEF
     # Int_balance = m.addConstrs((w_i[i,t]*p_g.sum(i,t) + w_i[i,t]*p_hat.sum('*',i,t) + w_i[i,t]*p_dc.sum(i,t) >= r_g.sum(i,t) + gp.quicksum(w_i[j,t] * p_hat[j,i,t] for j in neighbors.Neighbors[i]) + w_es.sum(i,t)*p_dc.sum(i,t) for i,t in sets.bus_t),name='Int-balance') # With ESS CEF
+    Int_balance = m.addConstrs((w_i[i,t]*p_g.sum(i,t) + w_i[i,t]*p_hat.sum('*',i,t) + w_i[i,t]*p_dc.sum(i,t) >= r_g.sum(i,t) + w_i[j,t] * p_hat.sum(i,'*',t) + w_es.sum(i,t)*p_dc.sum(i,t) for i,t in sets.bus_t),name='Int-balance') # With ESS CEF
 
     # penalty = m.addVars(sets.bus_t, lb=0,ub=1,name='penalty')
     # p_hs = m.addVars(sets.bus_t, vtype=GRB.CONTINUOUS, lb=0, ub=3, name='p_hat_sum')

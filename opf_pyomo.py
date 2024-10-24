@@ -4,7 +4,7 @@ from pyomo.environ import *
 from module import *
 import matplotlib.pyplot as plt
 
-solver = 'ipopt'
+solver = 'couenne'
 
 SOLVER = pyo.SolverFactory(solver)
 assert SOLVER.available(), f"Solver {solver} is not available."
